@@ -1,0 +1,25 @@
+name: Python Checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.11']
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -r requirements.txt
+      - run: python -m py_compile netlog_collect.py netlog_data.py netlog_analyze.py netlog_plot.py
+      - run: bash -n netlog_watch.sh
+      - run: python -m unittest discover -s tests -v
+      - name: Exercise offline examples
+        run: |
+          python netlog_analyze.py --log-file examples/sample-netlog.csv
+          python netlog_plot.py --log-file examples/sample-netlog.csv --speed-graph /tmp/speed.png --latency-graph /tmp/latency.png
